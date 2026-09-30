@@ -14,7 +14,7 @@ SVG_NAMESPACE = "http://www.w3.org/2000/svg"
 TEXT_TAG = f"{{{SVG_NAMESPACE}}}text"
 RECT_TAG = f"{{{SVG_NAMESPACE}}}rect"
 PORTRAIT_FONT_SIZE = 8.0
-REMOVED_METRICS = (". Stars:", ". Followers:", ". Contributed:")
+REMOVED_METRICS = (". Stars:", ". Followers:", ". Contributed:", ". Issues:")
 TOP_REPO_STARS = re.compile(r"\s+\([\d,]+\s*\u2605\)\s*$")
 
 
