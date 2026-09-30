@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from copy import deepcopy
 from pathlib import Path
+import re
 import xml.etree.ElementTree as ET
 
 
@@ -13,6 +14,8 @@ SVG_NAMESPACE = "http://www.w3.org/2000/svg"
 TEXT_TAG = f"{{{SVG_NAMESPACE}}}text"
 RECT_TAG = f"{{{SVG_NAMESPACE}}}rect"
 PORTRAIT_FONT_SIZE = 8.0
+REMOVED_METRICS = (". Stars:", ". Followers:", ". Contributed:")
+TOP_REPO_STARS = re.compile(r"\s+\([\d,]+\s*\u2605\)\s*$")
 
 
 def number(value: str) -> float:
@@ -37,6 +40,32 @@ def portrait_signature(root: ET.Element) -> list[tuple[tuple[tuple[str, str], ..
         (tuple(sorted(element.attrib.items())), "".join(element.itertext()))
         for element in text_rows(root, portrait=True)
     ]
+
+
+def simplify_data_rows(rows: list[ET.Element]) -> None:
+    for row in rows:
+        row_text = "".join(row.itertext())
+        for label in REMOVED_METRICS:
+            if label not in row_text:
+                continue
+            children = list(row)
+            label_index = next(
+                index
+                for index, child in enumerate(children)
+                if label in (child.text or "")
+            )
+            start = label_index
+            if label_index > 0 and (children[label_index - 1].text or "").strip() == "|":
+                start -= 1
+            for child in children[start:]:
+                row.remove(child)
+            break
+
+        if ". Top repo:" in row_text:
+            for child in reversed(list(row)):
+                if child.text:
+                    child.text = TOP_REPO_STARS.sub("", child.text)
+                    break
 
 
 def update_dimensions(
@@ -76,6 +105,8 @@ def merge_data(current_path: Path, fresh_path: Path) -> tuple[int, int]:
         raise RuntimeError(f"No portrait rows found in {current_path}")
     if not current_data or not fresh_data:
         raise RuntimeError("Both cards must contain data rows")
+
+    simplify_data_rows(fresh_data)
 
     current_data_x = min(number(element.get("x", "0")) for element in current_data)
     fresh_data_x = min(number(element.get("x", "0")) for element in fresh_data)
