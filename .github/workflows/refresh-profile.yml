@@ -1,4 +1,4 @@
-name: Refresh animated profile
+name: Refresh gh-ascii card
 
 on:
   schedule:
@@ -9,36 +9,43 @@ permissions:
   contents: write
 
 concurrency:
-  group: animated-profile-refresh
+  group: refresh-gh-ascii-card
   cancel-in-progress: true
 
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
 
     steps:
-      - name: Check out profile repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
-          python-version: "3.10"
+          python-version: "3.12"
 
-      - name: Generate profile art
+      - name: Download both themes
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python scripts/generate_profile_art.py --username vinodyallur
-
-      - name: Commit refreshed assets
+          HANDLE: vinodyallur
+          GH_ASCII_URL: https://gh.crafter.run
         run: |
-          git add data/profile.json ascii-portrait.svg info-card.svg contrib-heatmap.svg
-          if git diff --cached --quiet; then
-            echo "Profile art is already current."
-            exit 0
-          fi
+          curl -fsSL --retry 3 --retry-delay 5 \
+            "$GH_ASCII_URL/$HANDLE?theme=dark" \
+            -o dark_mode.svg
+          curl -fsSL --retry 3 --retry-delay 5 \
+            "$GH_ASCII_URL/$HANDLE?theme=light" \
+            -o light_mode.svg
+
+      - name: Animate both themes
+        run: python scripts/animate_card.py dark_mode.svg light_mode.svg
+
+      - name: Commit only if the card changed
+        run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "chore: refresh profile art [skip ci]"
-          git push
+          git add dark_mode.svg light_mode.svg
+          if git diff --cached --quiet; then
+            echo "Card unchanged; nothing to commit."
+          else
+            git commit -m "chore: refresh gh-ascii card"
+            git push
+          fi

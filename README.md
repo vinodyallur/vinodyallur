@@ -1,18 +1,22 @@
-<div align="center">
+<picture>
+	<source media="(prefers-color-scheme: dark)" srcset="dark_mode.svg" />
+	<source media="(prefers-color-scheme: light)" srcset="light_mode.svg" />
+	<img alt="vinodyallur's GitHub profile" src="dark_mode.svg" />
+</picture>
 
-### `vinod@github:~$ ./contributions.sh`
+## Hi there 👋
 
-<img src="./contrib-heatmap.svg" width="860" alt="Vinod's animated GitHub contribution heatmap" />
+<!--
+**vinodyallur/vinodyallur** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
 
-<br />
+Here are some ideas to get you started:
 
-### `vinod@github:~$ whoami`
-
-<table>
-	<tr>
-		<td valign="top"><img src="./ascii-portrait.svg" width="370" alt="Animated ASCII portrait of Vinod" /></td>
-		<td valign="top"><img src="./info-card.svg" width="490" alt="Vinod's animated neofetch profile card" /></td>
-	</tr>
-</table>
-
-</div>
+- 🔭 I’m currently working on ...
+- 🌱 I’m currently learning ...
+- 👯 I’m looking to collaborate on ...
+- 🤔 I’m looking for help with ...
+- 💬 Ask me about ...
+- 📫 How to reach me: ...
+- 😄 Pronouns: ...
+- ⚡ Fun fact: ...
+-->
