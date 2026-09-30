@@ -39,17 +39,17 @@ jobs:
 
       - name: Merge data without changing the portrait
         run: |
-          python scripts/merge_card_data.py dark_mode.svg /tmp/dark_mode.svg --minimum-repos 24 --minimum-contributions 256
-          python scripts/merge_card_data.py light_mode.svg /tmp/light_mode.svg --minimum-repos 24 --minimum-contributions 256
+          python scripts/merge_card_data.py profile-dark.svg /tmp/dark_mode.svg --minimum-repos 24 --minimum-contributions 256
+          python scripts/merge_card_data.py profile-light.svg /tmp/light_mode.svg --minimum-repos 24 --minimum-contributions 256
 
       - name: Animate both themes
-        run: python scripts/animate_card.py dark_mode.svg light_mode.svg
+        run: python scripts/animate_card.py profile-dark.svg profile-light.svg
 
       - name: Commit only if the card changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add dark_mode.svg light_mode.svg
+          git add profile-dark.svg profile-light.svg
           if git diff --cached --quiet; then
             echo "Card unchanged; nothing to commit."
           else
