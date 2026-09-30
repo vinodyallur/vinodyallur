@@ -42,7 +42,28 @@ def portrait_signature(root: ET.Element) -> list[tuple[tuple[tuple[str, str], ..
     ]
 
 
-def simplify_data_rows(rows: list[ET.Element]) -> None:
+def ensure_metric_minimum(row: ET.Element, label: str, minimum: int) -> None:
+    children = list(row)
+    label_index = next(
+        (index for index, child in enumerate(children) if label in (child.text or "")),
+        None,
+    )
+    if label_index is None:
+        raise RuntimeError(f"Fresh card is missing the {label} metric")
+
+    for child in children[label_index + 1 :]:
+        value = (child.text or "").strip().replace(",", "")
+        if value.isdigit():
+            child.text = f" {max(int(value), minimum):,}"
+            return
+    raise RuntimeError(f"Fresh card has no numeric value for {label}")
+
+
+def simplify_data_rows(
+    rows: list[ET.Element],
+    minimum_repos: int,
+    minimum_contributions: int,
+) -> None:
     for row in rows:
         row_text = "".join(row.itertext())
         for label in REMOVED_METRICS:
@@ -66,6 +87,11 @@ def simplify_data_rows(rows: list[ET.Element]) -> None:
                 if child.text:
                     child.text = TOP_REPO_STARS.sub("", child.text)
                     break
+
+        if ". Repos:" in row_text:
+            ensure_metric_minimum(row, ". Repos:", minimum_repos)
+        if ". Contributions:" in row_text:
+            ensure_metric_minimum(row, ". Contributions:", minimum_contributions)
 
 
 def update_dimensions(
@@ -91,7 +117,12 @@ def update_dimensions(
     frame.set("height", format_number(merged_height - 1))
 
 
-def merge_data(current_path: Path, fresh_path: Path) -> tuple[int, int]:
+def merge_data(
+    current_path: Path,
+    fresh_path: Path,
+    minimum_repos: int,
+    minimum_contributions: int,
+) -> tuple[int, int]:
     ET.register_namespace("", SVG_NAMESPACE)
     current_tree = ET.parse(current_path)
     fresh_tree = ET.parse(fresh_path)
@@ -106,7 +137,7 @@ def merge_data(current_path: Path, fresh_path: Path) -> tuple[int, int]:
     if not current_data or not fresh_data:
         raise RuntimeError("Both cards must contain data rows")
 
-    simplify_data_rows(fresh_data)
+    simplify_data_rows(fresh_data, minimum_repos, minimum_contributions)
 
     current_data_x = min(number(element.get("x", "0")) for element in current_data)
     fresh_data_x = min(number(element.get("x", "0")) for element in fresh_data)
@@ -138,9 +169,16 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("current", type=Path)
     parser.add_argument("fresh", type=Path)
+    parser.add_argument("--minimum-repos", type=int, default=0)
+    parser.add_argument("--minimum-contributions", type=int, default=0)
     arguments = parser.parse_args()
 
-    portrait_rows, data_rows = merge_data(arguments.current, arguments.fresh)
+    portrait_rows, data_rows = merge_data(
+        arguments.current,
+        arguments.fresh,
+        arguments.minimum_repos,
+        arguments.minimum_contributions,
+    )
     print(
         f"Preserved {portrait_rows} portrait rows and refreshed {data_rows} data rows "
         f"in {arguments.current}"
