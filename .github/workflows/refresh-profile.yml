@@ -39,8 +39,8 @@ jobs:
 
       - name: Merge data without changing the portrait
         run: |
-          python scripts/merge_card_data.py profile-dark.svg /tmp/dark_mode.svg --minimum-repos 24 --minimum-contributions 256
-          python scripts/merge_card_data.py profile-light.svg /tmp/light_mode.svg --minimum-repos 24 --minimum-contributions 256
+          python scripts/merge_card_data.py profile-dark.svg /tmp/dark_mode.svg --minimum-repos 24 --minimum-contributions 256 --location "Bangalore, India"
+          python scripts/merge_card_data.py profile-light.svg /tmp/light_mode.svg --minimum-repos 24 --minimum-contributions 256 --location "Bangalore, India"
 
       - name: Animate both themes
         run: python scripts/animate_card.py profile-dark.svg profile-light.svg

@@ -59,10 +59,39 @@ def ensure_metric_minimum(row: ET.Element, label: str, minimum: int) -> None:
     raise RuntimeError(f"Fresh card has no numeric value for {label}")
 
 
+def set_metric_text(
+    row: ET.Element,
+    label: str,
+    value: str,
+    dot_count: int | None = None,
+) -> None:
+    children = list(row)
+    label_index = next(
+        (index for index, child in enumerate(children) if label in (child.text or "")),
+        None,
+    )
+    if label_index is None:
+        raise RuntimeError(f"Fresh card is missing the {label} metric")
+
+    if dot_count is not None:
+        for child in children[label_index + 1 :]:
+            text = child.text or ""
+            if text and set(text) == {"."}:
+                child.text = "." * dot_count
+                break
+
+    for child in reversed(children[label_index + 1 :]):
+        if child.text:
+            child.text = f" {value}"
+            return
+    raise RuntimeError(f"Fresh card has no value for {label}")
+
+
 def simplify_data_rows(
     rows: list[ET.Element],
     minimum_repos: int,
     minimum_contributions: int,
+    location: str,
 ) -> None:
     for row in rows:
         row_text = "".join(row.itertext())
@@ -92,6 +121,8 @@ def simplify_data_rows(
             ensure_metric_minimum(row, ". Repos:", minimum_repos)
         if ". Contributions:" in row_text:
             ensure_metric_minimum(row, ". Contributions:", minimum_contributions)
+        if location and ". Location:" in row_text:
+            set_metric_text(row, ". Location:", location, dot_count=23)
 
 
 def update_dimensions(
@@ -122,6 +153,7 @@ def merge_data(
     fresh_path: Path,
     minimum_repos: int,
     minimum_contributions: int,
+    location: str,
 ) -> tuple[int, int]:
     ET.register_namespace("", SVG_NAMESPACE)
     current_tree = ET.parse(current_path)
@@ -137,7 +169,7 @@ def merge_data(
     if not current_data or not fresh_data:
         raise RuntimeError("Both cards must contain data rows")
 
-    simplify_data_rows(fresh_data, minimum_repos, minimum_contributions)
+    simplify_data_rows(fresh_data, minimum_repos, minimum_contributions, location)
 
     current_data_x = min(number(element.get("x", "0")) for element in current_data)
     fresh_data_x = min(number(element.get("x", "0")) for element in fresh_data)
@@ -171,6 +203,7 @@ def main() -> None:
     parser.add_argument("fresh", type=Path)
     parser.add_argument("--minimum-repos", type=int, default=0)
     parser.add_argument("--minimum-contributions", type=int, default=0)
+    parser.add_argument("--location", default="")
     arguments = parser.parse_args()
 
     portrait_rows, data_rows = merge_data(
@@ -178,6 +211,7 @@ def main() -> None:
         arguments.fresh,
         arguments.minimum_repos,
         arguments.minimum_contributions,
+        arguments.location,
     )
     print(
         f"Preserved {portrait_rows} portrait rows and refreshed {data_rows} data rows "
