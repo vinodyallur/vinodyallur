@@ -24,26 +24,23 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Download both themes
+      - name: Download fresh card data
         env:
           HANDLE: vinodyallur
           GH_ASCII_URL: https://gh.crafter.run
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          avatar_url="$(gh api "users/$HANDLE" --jq '.avatar_url')"
+          refresh="$(date +%s)"
           curl -fsSL --retry 3 --retry-delay 5 \
-            "${avatar_url}&cache=$(date +%s)" \
-            -o /tmp/github-avatar.jpg
+            "$GH_ASCII_URL/$HANDLE?theme=dark&refresh=$refresh" \
+            -o /tmp/dark_mode.svg
           curl -fsSL --retry 3 --retry-delay 5 \
-            -F "image=@/tmp/github-avatar.jpg" \
-            -F "theme=dark" \
-            "$GH_ASCII_URL/$HANDLE" \
-            -o dark_mode.svg
-          curl -fsSL --retry 3 --retry-delay 5 \
-            -F "image=@/tmp/github-avatar.jpg" \
-            -F "theme=light" \
-            "$GH_ASCII_URL/$HANDLE" \
-            -o light_mode.svg
+            "$GH_ASCII_URL/$HANDLE?theme=light&refresh=$refresh" \
+            -o /tmp/light_mode.svg
+
+      - name: Merge data without changing the portrait
+        run: |
+          python scripts/merge_card_data.py dark_mode.svg /tmp/dark_mode.svg
+          python scripts/merge_card_data.py light_mode.svg /tmp/light_mode.svg
 
       - name: Animate both themes
         run: python scripts/animate_card.py dark_mode.svg light_mode.svg
