@@ -2,7 +2,7 @@ name: Refresh gh-ascii card
 
 on:
   schedule:
-    - cron: "17 6 * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -15,6 +15,7 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
 
     steps:
       - uses: actions/checkout@v7
@@ -27,12 +28,21 @@ jobs:
         env:
           HANDLE: vinodyallur
           GH_ASCII_URL: https://gh.crafter.run
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          avatar_url="$(gh api "users/$HANDLE" --jq '.avatar_url')"
           curl -fsSL --retry 3 --retry-delay 5 \
-            "$GH_ASCII_URL/$HANDLE?theme=dark" \
+            "${avatar_url}&cache=$(date +%s)" \
+            -o /tmp/github-avatar.jpg
+          curl -fsSL --retry 3 --retry-delay 5 \
+            -F "image=@/tmp/github-avatar.jpg" \
+            -F "theme=dark" \
+            "$GH_ASCII_URL/$HANDLE" \
             -o dark_mode.svg
           curl -fsSL --retry 3 --retry-delay 5 \
-            "$GH_ASCII_URL/$HANDLE?theme=light" \
+            -F "image=@/tmp/github-avatar.jpg" \
+            -F "theme=light" \
+            "$GH_ASCII_URL/$HANDLE" \
             -o light_mode.svg
 
       - name: Animate both themes
